@@ -1,0 +1,24 @@
+import hashlib
+import secrets #<-- librerira para poder generar las secrets
+# haremos una lista con contraseñas duplicadas para probar la teoria
+
+passwords = ["123456", "admin123", "123456"]
+print("---LISTA CON HASHING DINAMiCO (NIVEL EXPERTO)") 
+
+for password in passwords:
+    # 1 GENERAMOS LA SALT UNIA ,cada vuelta crea una nueva
+    # token_hex(8)nos creara una cadena aleatoria de 16 caracteres
+
+    salt_dinamica = secrets.token_hex(8)
+    # 
+
+    # 2 sazonar ,concatenamos la salt_dinamica y las passwrds
+    password_salt_dinamica = password + salt_dinamica
+
+    # 3 ahora pasamos a hashear, tritutrar }
+    hash_obj = hashlib.sha256(password_salt_dinamica.encode())
+    hash_final_dinamico = hash_obj.hexdigest()
+    # impriimimos los resultados par poder como cmabia en cada linea 
+    #con el salt dinamico
+    print(f"contraseña original: {password} | contraseña con salt dinamica: {salt_dinamica} |contraseña_hasheado_dinamico: {hash_final_dinamico[:10]}")
+    print("_"*40)
