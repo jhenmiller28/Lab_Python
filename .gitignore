@@ -1,0 +1,18 @@
+# Archivos de sistema basura
+.DS_Store
+Thumbs.db
+
+# Entornos virtuales y cache de Python
+__pycache__/
+*.py[cod]
+.venv
+env/
+venv/
+
+# Variables de entorno (¡MUY IMPORTANTE PARA SEGURIDAD!)
+.env
+
+# Archivos de datos pesados (GitHub no es para guardar Excel)
+*.csv
+*.xlsx
+*.log
