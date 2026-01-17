@@ -16,3 +16,5 @@ venv/
 *.csv
 *.xlsx
 *.log
+# Ignorar secretos y claves
+claves_secretas.txt
