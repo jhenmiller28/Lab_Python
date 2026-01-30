@@ -41,3 +41,4 @@ try:
                 #MANEJAMOS LA EXCEPCION SI EL ARCHIVO NO EXISTE
 except FileNotFoundError:
     print("error: el archivo server.log no existe, verificar si fue creado")
+0
