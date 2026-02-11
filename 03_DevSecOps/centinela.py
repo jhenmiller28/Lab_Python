@@ -40,7 +40,10 @@ def revisar_servidor():
              print(f"[{ahora}online]")
         else:
             print(f"[{ahora}] alerta | codigo:{respuesta.status_code}")
-
+        
+        with open("bitacora_seguridad.txt","a") as archivo:
+            mensaje = f"[{ahora}] estado : {respuesta.status_code}\n"   
+            archivo.write(mensaje)
 #  el manejo de errores
 # si el servidor esta apagado o no hay internet, el codigo de arriba fallaria
 # este bloque atrapa ese error y te avisa""el servidoe esta caido"
