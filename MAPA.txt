@@ -1,0 +1,41 @@
+🗺️ Mapa de Ruta: Python para DevOps & Seguridad
+Esta estructura de carpetas (Lab_Python) está diseñada para escalar el conocimiento de forma lógica: desde escribir código hasta controlar infraestructura en la nube.
+
+📂 01_Basicos (Los Cimientos)
+"Antes de correr, hay que aprender a caminar."
+
+¿Qué es? Entendimiento puro de la sintaxis y lógica del lenguaje. Sin interactuar con el sistema operativo ni internet.
+
+Objetivo: Dominar la lógica de programación.
+
+Conceptos Clave: Variables, Tipos de datos (String, Int, Listas), Bucles (for, while), Condicionales (if/else) y Funciones.
+
+Librerías: Ninguna externa (Python puro).
+
+Metáfora: Aprender el alfabeto y la gramática.
+
+📂 02_Automatizacion (Las Manos)
+"Que el robot haga el trabajo aburrido."
+
+¿Qué es? Interacción con el Sistema Operativo local (Windows/Linux). Aquí Python empieza a "tocar" tus archivos y carpetas.
+
+Objetivo: Eliminar tareas manuales repetitivas en tu PC o servidor local.
+
+Conceptos Clave: Manipulación de archivos (crear, mover, borrar), lectura de Excels/CSVs, gestión de logs, expresiones regulares (Regex).
+
+Librerías: os, sys, shutil, re, pandas.
+
+Metáfora: Un robot mayordomo que ordena tu casa y limpia el desorden.
+
+📂 03_DevSecOps (Los Ojos y el Cerebro)
+"Vigilancia, Nube y Seguridad."
+
+¿Qué es? Python sale de la PC y se conecta al mundo exterior (Internet, APIs, Nube).
+
+Objetivo: Monitorear infraestructura, auditar seguridad, automatizar despliegues en la nube y conectar servicios.
+
+Conceptos Clave: Peticiones HTTP, Scanners de puertos, APIs (AWS boto3, GitHub API), Sockets, Cifrado.
+
+Librerías: requests, socket, boto3, flask.
+
+Metáfora: Un guardia de seguridad (Centinela) que vigila el banco 24/7 y reporta anomalías.
