@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  centinela-pro:
+    build: .
+    container_name: centinela-2.0
+    restart: always  # Si el contenedor falla, Docker lo levanta solo
+    environment:
+      - PYTHONUNBUFFERED=1 # Logs en tiempo real garantizados
+    volumes:
+      - /var/log/auth.log:/var/log/auth.log:ro # Acceso a logs en solo lectura

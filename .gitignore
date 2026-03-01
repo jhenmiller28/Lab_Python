@@ -18,3 +18,17 @@ venv/
 *.log
 # Ignorar secretos y claves
 claves_secretas.txt
+
+# -- seguridad devsecops --
+# logs del sistema y de la aplicacion(contienen ips y datos sensibles)
+*.log
+salida.log
+bitacora_seguridad.txt
+
+# secretos y tokens (evitar subir algu token ejemplo de telegram por accidente)
+secrets.py
+config.json
+*.env
+
+# archivos temporales de docker
+.docker/

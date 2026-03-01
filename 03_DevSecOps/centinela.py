@@ -1,62 +1,53 @@
-# primero importamos la caja de herramientas
-#REQUESTS: es el navegador del robot, asi como usamos chrome/brave
-#python usa requests para VER paginass web
-
-#TIME nos permite usar el script SLEEP sin esto se generaria un ataque DDoS
-# el robot atacaria el servior millones de veces 
-
-# DATETIME nos da el reloj , en auditoria es escensial saber a que hora paso cada evento
 import requests
 import time
-from datetime import datetime
+import os
 
-#configuracion de variables
-#aquidefinimos las reglas de que se vigila y cada que tiempo
-#URL_OBEJTIVO LA DIRECCION DE LA CASA
-#INTERVALO CADA CUANTO TIEMPO PASA EL CENTINELA
-URL_OBJETIVO = "https://www.google.com"
-INTERVALO = 5
+# --- 1. CONFIGURACIÓN (Tus credenciales) ---
+TOKEN_TELEGRAM = "6821389279:AAF8O7QjGz1_v_Y3Nn9P2D7N4xM7S_W4Cok"
+CHAT_ID = "6598952744"
+URL_A_VIGILAR = "https://www.gooOgle.com"  # ¡Con comillas!
+INTERVALO = 60
 
-#FUNCION PRINCIPAL DEDL CEREBRO
-#DEFINIMOS la accion principal del cerebro
-# lo primero que hara es mirar el reloj y registrarlo
-#la funcion revisar_servidor():
-def revisar_servidor():
-    ahora = datetime.now().strftime('%H:%M:%S')
+# --- 2. FUNCIONES DE TRABAJO ---
 
-# LA RED DE SEGURIDAD,NUNCA ASUMIMOS QUE TODooo SALDRA BEIN
-# TRY: (INTENTA HACER ESTO...)
-# EXECPT (SI ALGO EXPLOTA NO TE MUERAS, HAZ ESTO OTRO)
+def enviar_telegram(mensaje):
+    url = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": mensaje}
     try:
-        respuesta= requests.get(URL_OBJETIVO,timeout=5)
-# REQUESTS.GET el robot envia una señal al servidor 
-#TIMEOUT=5 si el servidor no responde en 5 segundos el robot lo marca como error
-#no se queda espeadno para siempre
+        requests.post(url, data=payload)
+    except Exception as e:
+        print(f"Error enviando a Telegram: {e}")
 
-##la decision if/else
-#en lenguaje http codigo 200 todo esta bien
-#si es 404 es no encontrado o 500 no existe
-        if respuesta.status_code ==200:
-             print(f"[{ahora}online]")
+def revisar_servidor():
+    try:
+        # Aquí usamos la variable que tiene las comillas
+        respuesta = requests.get(URL_A_VIGILAR, timeout=10)
+        if respuesta.status_code == 200:
+            print(f"[{time.ctime()}] El servidor {URL_A_VIGILAR} está UP.")
         else:
-            print(f"[{ahora}] alerta | codigo:{respuesta.status_code}")
-        
-        with open("bitacora_seguridad.txt","a") as archivo:
-            mensaje = f"[{ahora}] estado : {respuesta.status_code}\n"   
-            archivo.write(mensaje)
-#  el manejo de errores
-# si el servidor esta apagado o no hay internet, el codigo de arriba fallaria
-# este bloque atrapa ese error y te avisa""el servidoe esta caido"
-    except requests.exceptions.ConnectionError:
-        print (f"[{ahora}] caido | nos e puede conectar...")
+            enviar_telegram(f"⚠️ Alerta: El servidor devolvió código {respuesta.status_code}")
+    except Exception as e:
+        enviar_telegram(f"🚨 CRÍTICO: No se puede acceder a la URL. Error: {e}")
 
-#el bucle infinito devigilancia
-#whilr true es un bucle que no termina hasta qye se apague la pc o lo detengamos
-#time.sleep pra que el robbot trabaje y descanse 5 segundos y seuga asi
-#keyboardInterrupt es para que podamos salir con control c y no salgag error
-try: 
-    while True:                #haz esto por siempre
-            revisar_servidor()    #ejecuta la funcion de arriba
-            time.sleep(INTERVALO) #duerme 5 segundos
-except KeyboardInterrupt:
-    print("vigilancia detenida")
+def vigilar_intrusos():
+    archivo_log = "/var/log/auth.log"
+    comando = f"tail -n 1 {archivo_log}"
+    try:
+        with os.popen(comando) as f:
+            linea = f.read()
+            if "Failed password" in linea:
+                msg = f"🔒 SEGURIDAD: Intento de acceso fallido detectado!\nDetalle: {linea.strip()}"
+                enviar_telegram(msg)
+    except Exception as e:
+        print(f"Error leyendo logs: {e}")
+
+# --- 3. EJECUCIÓN PRINCIPAL ---
+
+if __name__ == "__main__":
+    enviar_telegram("🚀 Centinela DevSecOps Activo y Patrullando")
+    print("--- Iniciando patrullaje ---")
+    
+    while True:
+        revisar_servidor()
+        vigilar_intrusos()
+        time.sleep(INTERVALO)
