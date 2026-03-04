@@ -8,3 +8,15 @@ services:
       - PYTHONUNBUFFERED=1 # Logs en tiempo real garantizados
     volumes:
       - /var/log/auth.log:/var/log/auth.log:ro # Acceso a logs en solo lectura
+
+# ----NUEVO TRABAJADOR AUDITOR.PY
+  auditor-login:
+    build: .
+    container_name: auditor-accesos
+    command: python auditor.py
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - /var/log/auth.log:/var/log/auth.log:ro
+

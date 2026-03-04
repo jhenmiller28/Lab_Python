@@ -10,7 +10,7 @@ WORKDIR /app
 # 3 copia elarchivo del script desde el servidor aws hacia la carpeta /app del contenedor
 # usamos el nombre exacto centinela.py para seguir el principio de minimo privilegio "solo copiar lo necesario"
 
-COPY centinela_2.0.py .
+COPY . .
 
 # 4 ejecuta un comando en la construccion de la imagen
 # aca instalamos la libreria requests, es necesaria para que el bot pueda enviar alertas a telegram
