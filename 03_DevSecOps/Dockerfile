@@ -4,6 +4,10 @@ FROM python:3.9-slim
 
 # 2 definimos el directorio de trabajo dentro del cotenedor 
 # es como hacer mkdir /app && cd/app todo lo que se haga ocurrira aca
+RUN apt-get update && apt-get install -y \
+    iptables \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
