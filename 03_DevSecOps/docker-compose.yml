@@ -1,3 +1,4 @@
+
 version: '3.8'
 services:
   centinela-pro:
@@ -14,15 +15,24 @@ services:
       - PYTHONUNBUFFERED=1 # Logs en tiempo real garantizados
     volumes:
       - /var/log/auth.log:/var/log/auth.log:ro # Acceso a logs en solo lectura
+    depends_on:
+      - db_postgres
+# aca colocamos la base de datos postgre sql
+  db_postgres:
+    image: postgres:15-alpine
 
-# ----NUEVO TRABAJADOR AUDITOR.PY
-  auditor-login:
-    build: .
-    container_name: auditor-accesos
-    command: python auditor.py
+    container_name: db_ataque_centinela
     restart: always
+    env_file: .env
     environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - /var/log/auth.log:/var/log/auth.log:ro
+      POSTGRES_DB: db_ataques
+      POSTGRES_USER: admin_centinela
+      POSTGRES_PASSWORD: 123
 
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
