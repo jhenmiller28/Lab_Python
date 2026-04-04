@@ -32,3 +32,10 @@ config.json
 
 # archivos temporales de docker
 .docker/
+
+# Datos de persistencia de Base de Datos
+pgdata/
+
+# Llaves de acceso (seguridad extrema)
+*.pem
+*.pub

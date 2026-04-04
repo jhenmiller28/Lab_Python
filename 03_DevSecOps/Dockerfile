@@ -7,6 +7,8 @@ FROM python:3.9-slim
 RUN apt-get update && apt-get install -y \
     iptables \
     sudo \
+    libpq-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,10 +21,10 @@ COPY . .
 # 4 ejecuta un comando en la construccion de la imagen
 # aca instalamos la libreria requests, es necesaria para que el bot pueda enviar alertas a telegram
 
-RUN pip install requests
+RUN pip install requests psycopg2-binary
 
 # 5 definde el comando que se ejecutara AUTOMATICAMENTE cuando el contenedor se encienda 
 # a diferencia de RUN este no se ejecuta al consturir sino cuadno el proceso cobra vida
 
-CMD ["python","centinela_2.0.py"]
+CMD ["python","centinela_3.0.py"]
 

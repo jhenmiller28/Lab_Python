@@ -10,7 +10,7 @@ services:
     cap_add: #comoando de añadir csapacidades al conteneodor
       - NET_ADMIN #administracion de red, le permite acceder al la iptables para poder bloquear ips
     network_mode: "host" # nos permite usar la ip dep servidor,normalmente cada contenedor es una burbuja y cuenta con su propa ip
-
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1 # Logs en tiempo real garantizados
     volumes:
@@ -25,14 +25,14 @@ services:
     restart: always
     env_file: .env
     environment:
-      POSTGRES_DB: db_ataques
-      POSTGRES_USER: admin_centinela
-      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql #es la conexion de la base de datos
 volumes:
   pgdata:

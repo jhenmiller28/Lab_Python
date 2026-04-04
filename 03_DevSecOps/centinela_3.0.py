@@ -1,68 +1,113 @@
-import time
-import requests
 import os
 import re
+import time
+import psycopg2
 
-# colocar nuestra IP publica para que el bot nunca nos bloque el acceso al servidor de aws
-MI_IP_SEGURA ="38.172.129.56"
-
-# --- CONFIGURACIÓN SEGURA ---
-TOKEN = "8285011702:AAE0Ih5VbKCph-4mhJA7cf6a_sozGYEWr8E"
-CHAT_ID = "6598952744"
+# CONFIGURACION BASICA PARA EL MONITOREO DE LOGS Y BLOQUEO DE IPS SOSPECHOSAS
 LOG_PATH = "/var/log/auth.log"
+MI_IP_SEGURA = "TU_IP_DE_ATE"  # ACA IRA LA IP SEGURA
 
 def enviar_telegram(mensaje):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": mensaje}
+    # ACA IRA LA LOGICA DEL BOT DE TELEGRAM, PERO POR AHORA SOLO ENVIAMOS MENSAJES
+    print(f" [TELEGRAM]: {mensaje}")
+
+
+def registrar_y_obtener_intentos(conn, ip):
     try:
-        requests.post(url, data=payload, timeout=10)
+        cur = conn.cursor()
+        # USAMOS UPSERT PARA PODER REGISTRAR EL PRIMER INTENTO U ACTUALIZAR LOS SIGUIENTES DE MANERA EFICIENTE
+        query = """
+        INSERT INTO ataques (ip, intentos, ultimo_ataque)
+        VALUES (%s, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (ip) 
+        DO UPDATE SET intentos = ataques.intentos + 1, ultimo_ataque = CURRENT_TIMESTAMP
+        RETURNING intentos;
+        """
+        cur.execute(query, (ip,))
+        intentos = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        return intentos
     except Exception as e:
-        print(f"❌ Error enviando a Telegram: {e}", flush=True)
+        print(f" Error de DB: {e}")
+        conn.rollback()
+        return 1
 
-# --- LATIDO INICIAL (HEARTBEAT) ---
-print("🛡️ [SISTEMA] Centinela 3.0 con bloqueo de ip..", flush=True)
-enviar_telegram("🚀 ¡Centinela3.0 en línea! Patrullando logs en AWS y listo para bloquear ip atacante...")
 
-# --- BUCLE DE MONITOREO ---
 def monitorear():
-    print (f"CENTINELA MODO DEFENSA ACTIVA...", flush=True)
+    print(" [SISTEMA] Centinela 3.0 con bloqueo de IP iniciado..")
+    print("CENTINELA MODO DEFENSA ACTIVA...", flush=True)
 
-    with open(LOG_PATH,"r") as f:
-	# ir al final del archivo para no leer ataques pasados
-        f.seek(0, 2)
+    # CONEXION A LA BASE DE DATOS POSTEGRESQL
+    try:
+        conn = psycopg2.connect(
+            host="localhost",  # Usamos localhost porque el contenedor está en modo host
+            database=os.getenv("POSTGRES_DB"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD"),
+        )
+    except Exception as e:
+        print(f"❌ Error fatal: No se pudo conectar a la DB: {e}")
+        return
 
-        while True:
-            linea = f.readline()
-            if not linea:
-                time.sleep(0.1) # espear minima de 0.1 segundos para no saturar la cpu del sevirdor
-                continue
+    # LECTURA DE LOGS (INTENTOS DE INGRESO)EN TIEMPO REAL Y APLICACION DE FILTROS DE SEGURIDAD PARA DETECTAR IPS SOSPECHOSAS Y BLOQUEARLAS
+    try:
+        with open(LOG_PATH, "r") as f:
+            # VAMOS AL FINAL DEL ARCHIVO PARA SOLO LEER LOS NUEVOS INTENTOS DE INGRESO
+            f.seek(0, 2)
 
-	    # filtro de seguridad
-            if "Failed password" in linea:
-               #aplicamos el molde de regex para poder buscar la ip en linea
-                busqueda = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', linea)
-             #si el molde encuentra una ip exitosamente...
-                if busqueda:
-                    ip_atacante = busqueda.group() #extrae el texto limpio
-                    #impedimos el bloquearnos a nosotros mismos
-                    if ip_atacante == MI_IP_SEGURA:
-                        print(f"intento fallido desde ip de confianza({ip_atacante}). Ignorando bloqueo.")
-                        continue
-                    print(f"ataque detctado. Bloqueadno IP:{ip_atacante}", flush=True)
-                   #ataque detectado ,accion de bloque real
-                    print (f"-- ATAQUE DETECTADO..IP aislada:{ip_atacante}" , flush=True)
-                     # ejecutamos el comando de firawall
-                    os.system(f"iptables -A INPUT -s {ip_atacante} -j DROP")
-                    enviar_telegram(f"ALERTA DE SGURIDAD \ INTENTO FALLIDO DESDE LA IP :{ip_atacante}")
+            while True:
+                linea = f.readline()
+                if not linea:
+                    time.sleep(0.1)
+                    continue
+
+                # EL FILTRO DE SEGURIDAD QUE NOS AYUDARA A DETECTAR IPS SOSPECHOSAS
+                if "Failed password" in linea:
+                    # Buscamos la IP con Regex
+                    busqueda = re.search(r"(\d{1,3}\.){3}\d{1,3}", linea)
+
+                    if busqueda:
+                        ip_atacante = busqueda.group()
+
+                        # FILTRO DE CONFIANZA CON LA WHITE LIST(MI IP SEGURA)
+                        if ip_atacante == MI_IP_SEGURA:
+                            print(
+                                f" Intento fallido desde IP segura ({ip_atacante}). Ignorando."
+                            )
+                            continue
+
+                        # LOGICA DE STRIKES PARA BLOQUEAR IPS QUE INTENTEN 
+                        # INGRESAR Y DE FAILED PASSWORD
+                        strikes = registrar_y_obtener_intentos(conn, ip_atacante)
+
+                        if strikes == 1:
+                            msg = f" STRIKE 1: IP {ip_atacante} detectada. Registro guardado."
+                            print(msg)
+                            enviar_telegram(msg)
+
+                        elif strikes == 2:
+                            msg = f" BLOQUEO: IP {ip_atacante} baneada por reincidencia."
+                            print(msg)
+                            # COMANDO PARA BLOQUEAR EN FIREWALL AWS/    UBUNTU
+                            os.system(
+                                f"sudo iptables -A INPUT -s {ip_atacante} -j DROP"
+                            )
+                            enviar_telegram(msg)
+
+                        elif strikes > 2:
+                            # SI TIENE DOS STRIKES O MAS,
+                            #  YA ESTA BLOQUEADA,
+                            pass
+
+    except FileNotFoundError:
+        print(f"----Error: No se encontró el archivo en {LOG_PATH}")
+    except KeyboardInterrupt:
+        print("\n----- Centinela desactivado por el usuario.")
+    finally:
+        if conn:
+            conn.close()
+
 
 if __name__ == "__main__":
     monitorear()
-
-
-
-
-
-
-
-
-
