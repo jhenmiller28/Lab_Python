@@ -7,9 +7,13 @@ import psycopg2
 LOG_PATH = "/var/log/auth.log"
 MI_IP_SEGURA = "TU_IP_DE_ATE"  # ACA IRA LA IP SEGURA
 
+
 def enviar_telegram(mensaje):
     # ACA IRA LA LOGICA DEL BOT DE TELEGRAM, PERO POR AHORA SOLO ENVIAMOS MENSAJES
     print(f" [TELEGRAM]: {mensaje}")
+    print(
+        f"mensaje de prueba con implementacion de github actions para despliegue continuo en AWS EC2"
+    )
 
 
 def registrar_y_obtener_intentos(conn, ip):
@@ -77,7 +81,7 @@ def monitorear():
                             )
                             continue
 
-                        # LOGICA DE STRIKES PARA BLOQUEAR IPS QUE INTENTEN 
+                        # LOGICA DE STRIKES PARA BLOQUEAR IPS QUE INTENTEN
                         # INGRESAR Y DE FAILED PASSWORD
                         strikes = registrar_y_obtener_intentos(conn, ip_atacante)
 
@@ -87,7 +91,9 @@ def monitorear():
                             enviar_telegram(msg)
 
                         elif strikes == 2:
-                            msg = f" BLOQUEO: IP {ip_atacante} baneada por reincidencia."
+                            msg = (
+                                f" BLOQUEO: IP {ip_atacante} baneada por reincidencia."
+                            )
                             print(msg)
                             # COMANDO PARA BLOQUEAR EN FIREWALL AWS/    UBUNTU
                             os.system(
