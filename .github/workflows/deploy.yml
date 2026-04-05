@@ -1,0 +1,54 @@
+# 1. IDENTIFICACIÓN DEL FLUJO
+name: Deploy Centinela 3.0 to AWS
+
+# 2. DISPARADOR (TRIGGER): Define CUÁNDO se ejecuta este contrato.
+on:
+  push:
+    branches: [ main ] # Solo actúa cuando los cambios llegan a la rama principal.
+
+# 3. TRABAJO (JOB): El conjunto de acciones que GitHub realizará.
+jobs:
+  deploy:
+    # GitHub nos presta una máquina virtual con Linux (Ubuntu) para procesar esto.
+    runs-on: ubuntu-latest
+    
+    steps:
+      # PASO 1: Descarga tu código de GitHub a la máquina virtual temporal.
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # PASO 2: La conexión mágica vía SSH a tu servidor AWS.
+      - name: Execute remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          # Estas variables vienen de tu "bóveda" (Secrets). 
+          # GitHub las inyecta aquí de forma invisible.
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          
+          # 4. SCRIPT DE EJECUCIÓN (Lo que GitHub escribirá en tu terminal de AWS por ti)
+          script: |
+            # Entramos a la carpeta de tu laboratorio de seguridad
+            cd ~/Lab_Python/03_DevSecOps
+            
+            # Sincronizamos el código del servidor con lo último que subiste a GitHub
+            git pull origin main
+            
+            # --- SEGURIDAD DEVSECOPS: RECONSTRUCCIÓN DEL ENTORNO ---
+            # Como el archivo .env NO se sube a Git por seguridad, 
+            # aquí lo volvemos a crear usando los Secretos de GitHub.
+            # El símbolo '>' crea el archivo de cero, '>>' añade líneas al final.
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" > .env
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+            echo "TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}" >> .env
+            echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+
+            # --- REINICIO DE INFRAESTRUCTURA (ORQUESTACIÓN) ---
+            # Detenemos los contenedores viejos para limpiar memoria y puertos.
+            sudo docker-compose down
+            
+            # Levantamos todo de nuevo. '--build' asegura que si cambiaste algo 
+            # en el código de Python, Docker cree una imagen nueva con ese cambio.
+            sudo docker-compose up --build -d
