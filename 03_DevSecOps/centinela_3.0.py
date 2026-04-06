@@ -12,7 +12,7 @@ def enviar_telegram(mensaje):
     # ACA IRA LA LOGICA DEL BOT DE TELEGRAM, PERO POR AHORA SOLO ENVIAMOS MENSAJES
     print(f" [TELEGRAM]: {mensaje}")
     print(
-        f"mensaje de prueba con implementacion de github actions para despliegue continuo en AWS EC2"
+        "🚀 Centinela 3.0: Despliegue automático exitoso desde GitHub Actions. Monitoreo activo en AWS EC2."
     )
 
 
