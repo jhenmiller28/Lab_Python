@@ -45,7 +45,9 @@ def monitorear():
     # CONEXION A LA BASE DE DATOS POSTEGRESQL
     try:
         conn = psycopg2.connect(
-            host="localhost",  # Usamos localhost porque el contenedor está en modo host
+            host=os.getenv(
+                "DB_HOST", "db_postgres"
+            ),  # Usamos la variable del nombre del servicio en el archivo docker-compose.yml
             database=os.getenv("POSTGRES_DB"),
             user=os.getenv("POSTGRES_USER"),
             password=os.getenv("POSTGRES_PASSWORD"),
@@ -67,7 +69,17 @@ def monitorear():
                     continue
 
                 # EL FILTRO DE SEGURIDAD QUE NOS AYUDARA A DETECTAR IPS SOSPECHOSAS
-                if "Failed password" in linea:
+                # Ahora el bot detectará cualquier tipo de rechazo de SSH
+                if any(
+                    keyword in linea
+                    for keyword in [
+                        "Failed password",
+                        "Connection closed",
+                        "Connection reset",
+                        "Invalid user",
+                        "Disconnected",
+                    ]
+                ):
                     # Buscamos la IP con Regex
                     busqueda = re.search(r"(\d{1,3}\.){3}\d{1,3}", linea)
 
