@@ -5,7 +5,8 @@ import psycopg2
 
 # CONFIGURACION BASICA PARA EL MONITOREO DE LOGS Y BLOQUEO DE IPS SOSPECHOSAS
 LOG_PATH = "/var/log/auth.log"
-MI_IP_SEGURA = "TU_IP_DE_ATE"  # ACA IRA LA IP SEGURA
+# Cargamos la IP de confianza desde el entorno
+MI_IP_SEGURA = os.getenv("MI_IP_SEGURA")  # ACA IRA LA IP SEGURA
 
 
 def enviar_telegram(mensaje):
@@ -45,9 +46,7 @@ def monitorear():
     # CONEXION A LA BASE DE DATOS POSTEGRESQL
     try:
         conn = psycopg2.connect(
-            host=os.getenv(
-                "DB_HOST", "db_postgres"
-            ),  # Usamos la variable del nombre del servicio en el archivo docker-compose.yml
+            host="127.0.0.1",  # usamos esta ip para referirnos a la base de datos local, aunque en un entorno real podria ser una IP privada o un servicio gestionado
             database=os.getenv("POSTGRES_DB"),
             user=os.getenv("POSTGRES_USER"),
             password=os.getenv("POSTGRES_PASSWORD"),
@@ -80,43 +79,38 @@ def monitorear():
                         "Disconnected",
                     ]
                 ):
-                    # Buscamos la IP con Regex
+                    # 1. Buscamos la IP con Regex
                     busqueda = re.search(r"(\d{1,3}\.){3}\d{1,3}", linea)
 
-                    if busqueda:
+                    if busqueda:  # <--- TODO LO QUE SIGUE DEBE ESTAR DENTRO DE AQUÍ
                         ip_atacante = busqueda.group()
 
-                        # FILTRO DE CONFIANZA CON LA WHITE LIST(MI IP SEGURA)
+                        # --- INICIO DE LA WHITELIST ---
                         if ip_atacante == MI_IP_SEGURA:
                             print(
-                                f" Intento fallido desde IP segura ({ip_atacante}). Ignorando."
+                                f"✅ Acceso detectado desde IP segura ({ip_atacante}). Ignorando reglas de bloqueo."
                             )
                             continue
+                        # --- FIN DE LA WHITELIST ---
 
-                        # LOGICA DE STRIKES PARA BLOQUEAR IPS QUE INTENTEN
-                        # INGRESAR Y DE FAILED PASSWORD
+                        # LOGICA DE STRIKES
                         strikes = registrar_y_obtener_intentos(conn, ip_atacante)
 
                         if strikes == 1:
-                            msg = f" STRIKE 1: IP {ip_atacante} detectada. Registro guardado."
+                            msg = f"🟡 STRIKE 1: IP {ip_atacante} detectada. Registro guardado."
                             print(msg)
                             enviar_telegram(msg)
 
                         elif strikes == 2:
-                            msg = (
-                                f" BLOQUEO: IP {ip_atacante} baneada por reincidencia."
-                            )
+                            msg = f"🔴 BLOQUEO: IP {ip_atacante} baneada por reincidencia."
                             print(msg)
-                            # COMANDO PARA BLOQUEAR EN FIREWALL AWS/    UBUNTU
                             os.system(
                                 f"sudo iptables -A INPUT -s {ip_atacante} -j DROP"
                             )
                             enviar_telegram(msg)
 
                         elif strikes > 2:
-                            # SI TIENE DOS STRIKES O MAS,
-                            #  YA ESTA BLOQUEADA,
-                            pass
+                            pass  # Ya está bloqueada, no hacemos nada adicional
 
     except FileNotFoundError:
         print(f"----Error: No se encontró el archivo en {LOG_PATH}")
